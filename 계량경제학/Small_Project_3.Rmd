@@ -1,0 +1,345 @@
+---
+title: 'Small Project #3'
+author: "Namwoo Kwon (20236002)"
+date: "2023-05-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+```
+
+## Description
+- The goal of Small Projects is “learning by doing” rather than evaluating your knowledge.
+- So, this project will be graded based on your efforts than its correctness. 
+- In other words, you will receive a full score as long as you answer all questions enough. 
+- Don’t copy and paste others’ answers. 
+
+## Instructions
+- Use R to estimate the model and answer the questions.
+- Please work on the problem set and submit it in a PDF format along with your R script file via Blackboard Assignment by the end of May 11th (Thursday). 
+
+<br>
+
+### First Quesation
+##### The following model can be used to study whether campaign expenditures affect election outcomes:
+
+$$
+voteA = \beta_{0} + \beta_{1}log(expendA)+\beta_{2}(expendB)+\beta_{3}prtystrA + u
+$$
+
+##### where voteA is the percentage of the vote received by Candidate A, expendA and expendB are campaign expenditures by Candidates A and b, and prtystrA is a measure of party strength for Candidate A (the percentage of the most recent presidential vote that went to A’s party). 
+
+<br>
+
+```{r 0-0}
+library(wooldridge)
+data(vote1, package='wooldridge')
+```
+```{r 0-1}
+head(vote1)
+str(vote1)
+```
+<br>
+
+##### 1) What is the interpretation of 𝛽1? 
+
+<br>
+
+Answer
+
+- The coefficient of 𝛽1 is about 7.228.
+- This means that when Candidate A's expending increases by 1 percent, Candidate A's voting rate increases by 7 percent.
+
+<br>
+```{r 1-0}
+regression <- lm(voteA ~ lexpendA+lexpendB+prtystrA, data=vote1)
+```
+```{r 1-1}
+regression$coefficients[2]
+```
+
+<br>
+
+##### 2)  In terms of the parameters, state the null hypothesis that a 1% increase in A’s expenditures is offset by a 1% increase in b’s expenditures. 
+
+<br>
+
+Answer
+
+- For Candidate A's expenditure to be offset by Candidate B's expenditure, the coefficients of the two variables must have opposite signs.
+- So the null hypothesis is that the coefficients of the two variables add up to zero.
+
+<br>
+
+$$
+H_{0} : \beta_{1} + \beta_{2} = 0
+$$
+
+<br>
+
+##### 3)  Estimate the given model using the data in VOTE1 and report the results in usual form. Do A’s expenditures affect the outcome? What about b’s expenditures? Can you use these results to test the hypothesis in part (ii)?
+
+<br>
+
+Answer
+
+- The coefficients of 'lexpendA' and 'lexpendB' were estimated to be 6.083 and -6.615, respectively.
+- Looking at the t-value of each coefficient, it seems that it is statistically significant and the result came out like the null hypothesis in part 2.
+- However, since the covariance of each coefficient is unknown, the null hypothesis cannot be tested.
+
+<br>
+
+```{r 3-0}
+summary(regression)
+```
+```{r 3-1}
+regression$coefficients[2:3]
+```
+
+<br>
+
+##### 4) Estimate a model that directly gives the t statistic for testing the hypothesis in part (ii). What do you conclude? (Use a two-sided alternative.) 
+
+<br>
+
+Answer
+
+- Based on the null hypothesis, a 'null_hypothesis' variable was created and the model was estimated through OLS.
+- As a result, the coefficient of 'null_hypothesis' was about 6.615. And looking at the t value, we can see that it is significant.
+- Therefore, it can be said that the null hypothesis cannot be rejected.
+
+<br>
+
+```{r 4-0}
+vote1['null_hypothesis'] = vote1['lexpendA'] - vote1['lexpendB']
+```
+```{r 4-1}
+regression <- lm(voteA ~ lexpendA+null_hypothesis+prtystrA, data=vote1)
+summary(regression)
+```
+
+<br>
+
+### Second Quesation
+##### Consider a model where the return to education depends upon the amount of work experience (and vice versa): 
+
+$$
+log(wage) = \beta_{0}+\beta_{1}educ+\beta_{2}exper+\beta_{3}educ*exper+u
+$$
+<br>
+
+```{r 5-0}
+data(wage2, package='wooldridge')
+```
+```{r 5-1}
+head(wage2)
+str(wage2)
+```
+
+<br>
+
+##### 1) Show that the return to another year of education (in decimal form), holding exper fixed, is 𝛽1 + 𝛽3exper. 
+
+<br>
+
+Answer
+
+- The equation below is the approximate proportional change in wages when the years of education is extended for another year
+
+$$
+log(wage) = (\beta_{1}+\beta_{3}exper)educ
+$$
+
+<br>
+
+##### 2)  State the null hypothesis that the return to education does not depend on the level of exper. What do you think is the appropriate alternative? 
+
+<br>
+
+Answer
+
+- If 'educ' and 'exper' are not independent of each other, the null hypothesis can be established as follows
+- Personally, I think that 'educ' and 'exper' are not independent of each other.
+- Employees can get more training to avoid being laid off and become worthy employers to hire. And, employees who have been on the job for a long time can get the training they want for a promotion or job change.
+- This relationship means that we can hypothesize that b3 can be positive.
+
+$$
+H_{0} : \beta_{3}=0
+$$
+
+<br>
+
+##### 3) Use the data in WAGE2 to test the null hypothesis in (ii) against your stated alternative.
+
+<br>
+
+Answer 
+
+- The coefficient of 'null_hypothesis' was approximately 0.0032, close to zero.
+- And looking at t-value and p-value, it can be confirmed that it is statistically significant.
+- As mentioned above, the coefficients are positive because the two variables are not independent.
+- However, it is a very small positive number with a coefficient close to zero.
+- Therefore, it can be said that the two variables are independent, but they cannot be said to be completely close.
+
+```{r 6-0}
+wage2['null_hypothesis'] = wage2['educ'] * wage2['exper']
+```
+```{r 6-1}
+regression <- lm(lwage ~ educ+exper+null_hypothesis, data=wage2)
+summary(regression)
+```
+
+<br>
+
+##### 4) Let 𝜃1 denote the return to education (in decimal form), when exper =10: 𝜃1=𝛽1+10𝛽3. Obtain 𝜃1 and a 95% confidence interval for 𝜃1. (Hint: Write 𝛽1=𝜃1−10𝛽3 and plug this into the equation; then rearrange. This gives the regression for obtaining the confidence interval for 𝜃1.) 
+
+<br>
+
+Answer
+
+- Following the instructions above, we can modify the equation as below.
+- Based on this, if an OLS-based linear regression model is obtained, the coefficient of 'educ' is about 0.0761 and the standard error is about 0.00662.
+- At the confidence level of 95%, the coefficient of 'educ' represents the confidence interval of [0.06285 ~ 0.08931].
+
+$$
+log(wage)=\beta_{0}+\theta_{1}educ+\beta_{2}exper+\beta_{3}educ(exper-10)+u
+$$
+```{r 7-0}
+wage2['new'] = wage2['educ'] * (wage2['exper']-10)
+```
+```{r 7-1}
+regression <- lm(lwage ~ educ+exper+new, data=wage2)
+summary(regression)
+```
+```{r 7-2}
+regression$coefficients[2]
+```
+```{r 7-3}
+0.076080-2*0.006615
+0.076080+2*0.006615
+```
+
+<br>
+
+### Third Quesation
+#####  Use the data in WAGE2 for this exercise. 
+
+<br>
+
+##### 1) Estimate the Model
+
+$$
+log(wage) = \beta_{0}+\beta_{1}educ+\beta_{2}exper+\beta_{3}tenure+\beta_{4}married+\beta_{5}black+\beta_{6}south+\beta_{7}urban+u
+$$
+##### and report the results in the usual form. Holding other factors fixed, what is the approximate difference in monthly salary between blacks and nonblacks? Is this difference statistically significant? 
+
+<br>
+
+Answer
+
+- By inferring the linear model and checking the coefficient of 'black', we can see that it is about -0.1886.
+- This means that wages are lowered for black people.
+- Looking at t-value and p-value, it can be seen that it is statistically significant.
+
+<br>
+
+```{r 8-0}
+regression <- lm(lwage ~ educ+exper+tenure+married+black+south+urban, data=wage2)
+summary(regression)
+```
+```{r 8-1}
+regression$coefficients[6]
+```
+
+<br>
+
+##### 2) Add the variables exper2 and tenure2 to the equation and show that they are jointly insignificant at even the 20% level. 
+
+<br>
+
+Answer
+
+- As a result of the hypothesis test, the F-statistic was about 1.4898 at the p-value of 0.226.
+- ince the p-value is higher than 20%, it can be said that it is jointly insignificant even at the 20% level.
+
+<br>
+
+```{r 9-0}
+wage2['exper_2'] = wage2['exper']^2
+wage2['tenure_2'] = wage2['tenure']^2
+```
+```{r 9-1}
+regression <- lm(lwage ~ educ+exper+tenure+married+black+south+urban+exper_2+tenure_2, data=wage2)
+summary(regression)
+```
+```{r 9-2}
+library(car)
+H0 <- c('exper_2', 'tenure_2')
+linearHypothesis(regression, H0)
+```
+
+<br>
+
+##### 3)  Extend the original model to allow the return to education to depend on race and test whether the return to education does depend on race.
+
+<br>
+
+Answer
+
+- Coefficients were inferred by creating a variable that multiplied 'black' and 'educ'.
+- The coefficient came out to be about -0.0226. This means that 'educ' based on whether you are black or not has a negative impact on wages.
+- However, when looking at the t-value and p-value, it was not statistically significant.
+
+<br>
+
+```{r 10-0}
+regression <- lm(lwage ~ educ + exper + tenure + married + black+ south + urban + black*educ, data = wage2)
+summary(regression)
+```
+```{r 10-1}
+regression$coefficients[9]
+```
+
+<br>
+
+##### 4) Again, start with the original model, but now allow wages to differ across four groups of people: married and black, married and nonblack, single and black, and single and nonblack. What is the estimated wage differential between married blacks and married nonblacks? 
+
+<br>
+
+Answer
+
+- Married Black and Married Non-Black variables were created.
+- And each coefficient was inferred, and the coefficients of married black and married non-black variables were 0.009448 and 0.188915, respectively.
+- Assuming that the other variables are the same (the values of the other variables are set to 0), only the coefficients and intercepts of each variable remain. Their sum is the wage of each married black and married non-black.
+- The difference between the values thus obtained was -0.1794663. This means that married non-blacks earn higher wages than married blacks.
+
+<br>
+
+```{r 11-0}
+married_black = ifelse(wage2$married ==1 & wage2$black ==1, 1, 0)
+single_black = ifelse(wage2$married ==0 & wage2$black ==1, 1, 0)
+married_black_X = ifelse(wage2$married ==1 & wage2$black ==0, 1, 0)
+```
+```{r 11-1}
+wage2 <- cbind(wage2, married_black, single_black, married_black_X)
+```
+```{r 11-2}
+regression <- lm(lwage ~ educ + exper + tenure + south + urban + married_black + single_black + married_black_X, data = wage2)
+summary(regression)
+```
+```{r 11-3}
+default <- regression$coefficients[1]
+married_black_wage <- regression$coefficients[7]
+married_black_X_wage <- regression$coefficients[9]
+```
+```{r 11-4}
+married_black_wage <- default+married_black_wage
+married_black_X_wage <- default+married_black_X_wage
+married_black_wage
+married_black_X_wage
+```
+```{r 11-5}
+married_black_wage - married_black_X_wage
+```
+

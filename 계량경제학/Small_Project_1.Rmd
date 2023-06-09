@@ -1,0 +1,453 @@
+---
+title: "Econometrics Small Project 1"
+author: "Namwoo Kwon (20236002)"
+date: "2023-04-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+
+## Description
+
+* The goal of Small Projects is “learning by doing” rather than evaluating your knowledge. 
+* So, this project will be graded based on your efforts than its correctness. 
+* In other words, you will receive a full score as long as you answer all questions enough. 
+
+<br>
+
+## Instructions
+
+* Use R to estimate the model and answer the questions.
+* Please work on the problem set and submit it in a PDF format along with your R script file via Blackboard Assignments by the end of April 6th (Thursday).
+* Please do not zip the file! 
+
+<br>
+
+## Intro
+* Use the data in HPRICE1 to estimate the model
+
+  - **price** : house price, $1000s
+  - **assess** : assessed value, $1000s
+  - **bdrms** : number of bedrooms
+  - **lotsize** : size of lot in square feet
+  - **sqrft** : size of house in square feet
+  - **colonial** : =1 if home is colonial style
+  - **lprice** : log(price)
+  - **lassess** : log(assess)
+  - **llotsize** : log(lotsize)
+  - **lsqrft** : log(sqrft)<br><br>
+  
+```{r 0}
+#install.packages('wooldridge')
+library(wooldridge)
+
+data(hprice1, package='wooldridge')
+```
+
+<br>
+
+* **𝑝𝑟𝑖𝑐𝑒 = 𝛽0 + 𝛽1 𝑠𝑞𝑟𝑓𝑡 + 𝛽2 𝑏𝑑𝑟𝑚𝑠 + 𝑢**,
+  - 𝑝𝑟𝑖𝑐𝑒 = House Price
+  - 𝑠𝑞𝑟𝑓 = Square Footage Constant
+  - 𝑑𝑟𝑚𝑠 = number of bedrooms<br><br>
+
+<br>
+
+$$
+price = \beta_{0} \ + \ \beta_{1}sqrft \ + \ \beta_{2}bdrms
+$$
+
+<br>
+  
+* where price is the house price measured in thousands of dollars. 
+
+<br>
+
+## Quiz 1
+* ##### Write out the results in equation form. 
+
+<br>
+
+##### The two variables (sqrft & bdrms) of the model presented in the Intro have a significant positive correlation.
+##### This suggests that it leads to multicollinearity, which can lead to problems with regression analysis.
+##### Therefore, it is necessary to verify that variable selection is appropriate.
+```{r 1-1}
+cor(hprice1$sqrft, hprice1$bdrms)
+```
+
+<br>
+
+##### It can be seen that when the 𝑠𝑞𝑟𝑓 increases, the 𝑑𝑟𝑚𝑠 increases step by step.
+##### And it can be seen that increasing 𝑠𝑞𝑟𝑓 does not necessarily increase 𝑑𝑟𝑚𝑠.
+##### The reason for the result is as follows. The area of the house must be above a certain number to increase the number of beds.
+```{r 1-2}
+plot(hprice1$sqrft, hprice1$bdrms,
+     main='Scatter Plot (sqrft & bdrms)',
+     xlab='Size of House in Square Feet',
+     ylab='Number of Bedrooms',
+     pch=19,
+     col='red'
+     )
+
+abline(v=1150,
+       h=3,
+       lty=3,
+       col='darkblue')
+
+abline(v=1510,
+       h=4,
+       lty=3,
+       col='darkblue')
+
+abline(v=2280,
+       h=5,
+       lty=3,
+       col='darkblue')
+
+abline(v=3510,
+       h=7,
+       lty=3,
+       col='darkblue')
+```
+
+<br>
+
+##### Calculate the multi-linear function with 𝑠𝑞𝑟𝑓 and 𝑑𝑟𝑚𝑠 as independent variables and 𝑝𝑟𝑖𝑐𝑒 as dependent variables.
+##### Residuals, coefficients, and statistical significance can be confirmed as a result.
+
+```{r 1-3}
+regression <- lm(price ~ sqrft+bdrms, data=hprice1)
+summary(regression)
+```
+
+<br>
+
+##### If the residuals are plotted as a histogram, you can see that there are many small residual values.
+
+```{r 1-4}
+h <- hist(regression$residuals,
+     breaks=10,
+     main='Histogram of Residuals',
+     xlab='Residuals',
+     ylab='Frequency',
+     ylim=c(0, 35),
+     xlim=c(-250, 300),
+     col='blue')
+
+text(h$mids,
+     h$counts,
+     labels=h$counts,
+     adj=c(0.5, -0.5))
+```
+
+<br>
+
+##### Checking the coefficients, The fitted model (depends on samples) can be expressed as follows.
+$$
+\hat{price} = \hat{\beta_{0}} \ + \ \hat{\beta_{1}}sqrft \ + \ \hat{\beta_{2}}bdrms
+$$
+<br>
+
+$$
+ \hat{\beta_{0}} = -19.3149958 \\
+ \hat{\beta_{1}} = 0.1284362 \\
+ \hat{\beta_{2}} = 15.19819108
+$$
+
+<br>
+
+$$
+\hat{price} = -19.3149958 \ + \ 0.1284362sqrft \ + \ 15.19819108bdrms
+$$
+
+<br>
+
+
+```{r 1-5}
+regression$coefficients
+```
+
+<br>
+
+##### Multiple R-squared and Adjusted R-squared are more than 60 percent.
+##### Therefore, the two independent variables selected seem to explain the dependent variable well.
+##### In particular, the sqrft variable seems to have a significant effect on the dependent variable because the p-value is extremely small in the t-distribution.
+##### Finally, since the p-value is less than 0.05 in F-statistic, it can be confirmed that the fitted model is statistically valid.
+```{r 1-6}
+summary(regression)
+```
+```{r 1-7}
+#install.packages('scatterplot3d')
+library(scatterplot3d)
+
+s3d <- scatterplot3d(hprice1$sqrft,
+                     hprice1$bdrms,
+                     hprice1$price,
+                     angle=20,
+                     pch=19,
+                     color='red',
+                     main='The fitted model in depend on Samples',
+                     xlab='Size of House in Square Feet',
+                     ylab='Number of Bedrooms',
+                     zlab='House Price')
+
+s3d$plane3d(regression$coefficients,
+            lty=3,
+            col='darkblue')
+```
+
+$$
+\hat{price} = -19.3149958 \ + \ 0.1284362sqrft \ + \ 15.19819108bdrms
+$$
+
+<br>
+
+## Quiz 2
+* ##### What is the estimated increase in price for a house with one more bedroom, holding square footage constant?
+
+<br>
+
+##### According to the estimated model, when the number of beds increases by one, the price increases by 15.19819108 times $1000 (about $15,198).
+##### Because the coefficient of bdrms in the estimated model is 15.19819108.
+
+```{r 2-1}
+s3d <- scatterplot3d(hprice1$sqrft,
+                     hprice1$bdrms,
+                     hprice1$price,
+                     angle=90,
+                     pch=19,
+                     color='red',
+                     main='The fitted model in depend on Samples',
+                     xlab='Size of House in Square Feet',
+                     ylab='Number of Bedrooms',
+                     zlab='House Price')
+
+s3d$plane3d(regression$coefficients,
+            lty=3,
+            col='darkblue')
+```
+
+<br>
+
+## Quiz 3
+* ##### What is the estimated increase in price for a house with an additional bedroom that is 140 square feet in size? Compare this to your answer in part (ii). 
+
+<br>
+
+##### After all, what the question asks is how much the house price increased when the sqrft increased by 140 and the bdrms increased by 1.
+##### Beta hat zero is a constant, so it does not affect the increase in housing prices.
+##### So the increase in house prices can be calculated as follows.
+<br>
+
+$$
+\hat{the \ increase \ in \  house \ prices} = 0.1284362sqrft \ + \ 15.19819108bdrms
+$$
+$$
+33.17925908 \ = \ 0.1284362 \ * 140 \ + \ 15.19819108 * 1
+$$
+
+<br>
+
+##### This is the same as the sum of the increase in house prices by increasing only one of the independent variables.
+
+```{r 3-1}
+sqrft <- c(140, 140, 140, 140, 140, 140)
+bdrms <- c(1, 2, 3, 4, 5, 6)
+new.data <- data.frame(sqrft, bdrms)
+
+Predicted.Result <- predict(regression,
+                            newdata=new.data)
+
+plot(bdrms, Predicted.Result,
+     type='b',
+     col='red',
+     pch=19,
+     xlim=c(0, 7),
+     ylim=c(10, 100),
+     main='Changes in house prices due to the increase in the number of bedrooms\n(Size of House in Square Feet is fixed at 140)',
+     xlab='the number of bedrooms',
+     ylab="Model's Estimated House Price")
+
+text(bdrms,
+     Predicted.Result,
+     labels=Predicted.Result,
+     cex=0.7,
+     adj=c(0.5, -1.5))
+```
+```{r 3-2}
+differnet <- c(0, diff(Predicted.Result))
+result.df <- data.frame(sqrft, bdrms, Predicted.Result, differnet)
+result.df
+```
+```{r 3-3}
+sqrft <- c(140, 280, 420, 560, 700, 840)
+bdrms <- c(2, 2, 2, 2, 2, 2)
+new.data <- data.frame(sqrft, bdrms)
+
+Predicted.Result <- predict(regression,
+                            newdata=new.data)
+
+plot(sqrft, Predicted.Result,
+     type='b',
+     col='red',
+     pch=19,
+     xlim=c(50, 1000),
+     ylim=c(10, 150),
+     main='Changes in house prices due to the increase in Size of House in Square Feet\n(Number of bedrooms is fixed at 2)',
+     xlab='Size of House in Square Feet',
+     ylab="Model's Estimated House Price")
+
+text(sqrft,
+     Predicted.Result,
+     labels=Predicted.Result,
+     cex=0.7,
+     adj=c(0.5, -1.5))
+```
+```{r 3-4}
+differnet <- c(0, diff(Predicted.Result))
+result.df <- data.frame(sqrft, bdrms, Predicted.Result, differnet)
+result.df
+```
+
+<br>
+
+## Quiz 4
+* ##### What percentage of the variation in price is explained by square footage and number of bedrooms? 
+
+<br>
+
+##### The percentage of variation in the dependent variable explained by the two independent variables can be expressed as follows.
+
+<br>
+
+  - SSE : Explained sum of squares, represents variation explained by regression.
+  - SST : Total sum of squares, represents total variation in the dependent variable.
+  - R-squared : The fraction of the total variation that is explained by the regression. 
+
+<br>
+
+$$
+R^{2} = \frac{SSE}{SST}
+$$
+
+<br>
+
+##### Multiple R-squared is 63.2%.  
+##### Therefore, The percentage of the variation in price is explained by square footage and number of bedrooms is 64.2%.
+##### As the number of independent variables increases, R-squared tends to increase. (In this case, the number of independent variables is small.)
+##### Adjusted R-squared compensates for this problem.
+##### Additionally, the Adjusted R-squared is 62.3%. 
+
+
+```{r 4}
+summary(regression)
+```
+
+<br>
+
+## Quiz 5
+* ##### The first house in the sample has sqrft = 2,438 and bdrms = 4. Find the predicted selling price for this house from the OLS regression line? 
+
+```{r 5-1}
+sqrft <- 2438
+bdrms <- 4
+new.data <- data.frame(sqrft, bdrms)
+
+Predicted.Result <- predict(regression,
+                            newdata=new.data)
+print(Predicted.Result)
+```
+
+$$
+\hat{price} = -19.3149958 \ + \ 0.1284362  \ * \ 2438   \ + \ 15.19819108 \ * \ 4 \\ \hat{price} = 354.6052 \\
+price = 300
+$$
+```{r 5-2}
+price.hat <- fitted(regression)
+u.hat <- resid(regression)
+
+s3d1<-scatterplot3d(hprice1$sqrft,
+                     hprice1$bdrms,
+                     hprice1$price,
+                     angle=45,
+                     pch=4,
+                     color='green',
+                     main='True Price VS Predicted Price',
+                     xlab='Size of House in Square Feet',
+                     ylab='Number of Bedrooms',
+                     zlab='House Price')
+
+s3d1$points3d(hprice1$sqrft,
+             hprice1$bdrms,
+             price.hat,
+             pch=16,
+             col='red')
+
+s3d1$plane3d(regression$coefficients,
+            lty=3,
+            col='skyblue')
+
+legend("right",
+       legend = c('True Price','Predicted Price'),
+       col=c('green', 'red'), pch = 16)
+
+```
+```{r 5-3}
+OLS <- data.frame(hprice1$sqrft, hprice1$bdrms, hprice1$price, price.hat, u.hat)
+
+head(OLS, 10)
+tail(OLS, 10)
+```
+
+
+<br>
+
+## Quiz 6
+* #####  The actual selling price of the first house in the sample was $300,000 (so price = 300). Find the residual for this house. Does it suggest that the buyer underpaid or overpaid for the house? 
+
+<br>
+
+
+$$
+Residual = price \ - \ \hat{price} = - \ 54.6052
+$$
+
+<br>
+
+##### The model inferred through the sqrft and bdrms variables suggested an amount about $54.6 higher than $300.
+##### This suggests that the buyer made the purchase about $54.6 cheaper.
+##### However, as shown by Multiple R-squared and Adjusted R-squared in Quiz 4, the fit of the model is good, but not perfect.
+##### In conclusion, it seems appropriate to say that "it is more likely to be purchased at a good price" to buyer rather than the definitive conclusion that "it was purchased at a good price."
+
+```{r 6-1}
+colors <- c('green', "red")
+
+s3d <- scatterplot3d(c(hprice1$sqrft[1], hprice1$sqrft[1]),
+                     c(hprice1$bdrms[1], hprice1$bdrms[1]),
+                     c(hprice1$price[1], Predicted.Result),
+                     type='h',
+                     angle=45,
+                     pch=19,
+                     color=colors,
+                     main='The fitted model with Sample 1\n (u hat is -54.60525)',
+                     xlab='Size of House in Square Feet',
+                     ylab='Number of Bedrooms',
+                     zlab='House Price')
+
+s3d$plane3d(regression$coefficients,
+            lty=3,
+            col='darkblue')
+
+legend("right",
+       legend = c('True Price','Predicted Price'),
+       col=colors, pch = 16)
+```
+```{r 6-2}
+OLS <- data.frame(hprice1$sqrft, hprice1$bdrms, hprice1$price, price.hat, u.hat)
+
+OLS[1,]
+```
